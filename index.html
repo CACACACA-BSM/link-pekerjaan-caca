@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Link Pekerjaan CACA</title>
+
+    <!-- Favicon Emoji -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        /* Menggunakan font Inter untuk seluruh halaman */
+        body {
+            font-family: "Inter", sans-serif;
+        }
+
+        /* Animasi untuk spinner loading */
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border-left-color: #ef4444;
+            /* red-500 */
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Animasi untuk kartu saat muncul */
+        @keyframes card-enter {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-enter-animation {
+            animation: card-enter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800">
+    <!-- Kontainer Utama -->
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+        <!-- Header Section -->
+        <header class="text-center mb-16">
+            <h2 class="text-red-500 font-semibold tracking-wide uppercase">Layanan Kami</h2>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mt-2">Link Pekerjaan CACA</h1>
+            <p class="text-slate-500 mt-4 text-lg max-w-2xl mx-auto">
+                Akses cepat dan terorganisir ke semua sumber daya dan tautan penting Anda.
+            </p>
+        </header>
+
+        <!-- Kontainer Papan - Akan diisi oleh JavaScript -->
+        <div id="board-container" class="space-y-16 min-h-[300px]">
+            <!-- Status Loading -->
+            <div id="loading-state" class="w-full flex flex-col items-center justify-center text-slate-500 pt-10">
+                <div class="loading-spinner mb-6"></div>
+                <p class="text-lg">Menyusun data dari Google Sheet...</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-20 text-slate-500 text-sm">
+            <p>Dibuat dengan ✨ & ❤️ oleh kak afa yip yip</p>
+        </footer>
+    </div>
+
+    <!-- 
+        PERBAIKAN: DAFTAR KELAS WARNA UNTUK TAILWIND
+        Elemen ini tersembunyi untuk memastikan Tailwind menghasilkan CSS untuk warna-warna di bawah.
+    -->
+    <div class="hidden">
+        <span class="bg-red-500 text-white"></span>
+    </div>
+
+
+    <script>
+        // === KONFIGURASI ===
+        const sheetId = "1MtouFq4mvj9S1RjRbM-NoDzW75jPRI2Cn7rp6FpeBAk";
+        const sheetName = "LANDING PAGE";
+        const googleSheetURL = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+
+        // Ikon panah yang konsisten
+        const arrowIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>`;
+
+        // Fungsi untuk mengambil dan mem-parsing data CSV
+        async function fetchData() {
+            const boardContainer = document.getElementById("board-container");
+            const loadingState = document.getElementById("loading-state");
+
+            try {
+                const response = await fetch(googleSheetURL);
+                if (!response.ok) throw new Error("Gagal mengambil data. Pastikan Google Sheet dapat diakses publik.");
+                const csvText = await response.text();
+                const data = parseCSV(csvText);
+
+                // Di sini kita tidak mengelompokkan lagi, tapi membuat satu grid besar
+                renderBoard(data);
+
+            } catch (error) {
+                console.error(error);
+                boardContainer.innerHTML = `<div class="text-center w-full bg-red-100 text-red-800 p-4 rounded-lg"><strong>Error:</strong> ${error.message}</div>`;
+            } finally {
+                if (loadingState) loadingState.style.display = "none";
+            }
+        }
+
+        // Fungsi sederhana untuk parsing CSV
+        function parseCSV(text) {
+            const lines = text.trim().split("\n");
+            const headers = lines[0].split(",").map(h => h.trim().replace(/"/g, ""));
+            return lines.slice(1).map(line => {
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                return headers.reduce((obj, header, i) => {
+                    obj[header] = (values[i] || "").trim().replace(/^"|"$/g, "");
+                    return obj;
+                }, {});
+            });
+        }
+
+        // Fungsi untuk merender papan tugas
+        function renderBoard(items) {
+            const boardContainer = document.getElementById("board-container");
+            boardContainer.innerHTML = ""; // Hapus loading state
+
+            const cardGrid = document.createElement("div");
+            cardGrid.className = "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8";
+
+            let cardHTML = "";
+            items.forEach((item, index) => {
+                cardHTML += `
+                    <a href="${item.LINK || '#'}" target="_blank" rel="noopener noreferrer" 
+                       class="card-enter-animation group flex flex-col bg-white rounded-xl shadow-md 
+                              transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+                        
+                        <!-- Konten Teks -->
+                        <div class="p-6 flex-grow">
+                            <h3 class="font-bold text-lg text-slate-900">${item.JUDUL || "Tanpa Judul"}</h3>
+                            <p class="text-sm text-slate-500 mt-2 line-clamp-3">${item.DESKRIPSI || "Tidak ada deskripsi."}</p>
+                        </div>
+                        
+                        <!-- Footer Kartu dengan Ikon -->
+                        <div class="p-6 pt-0 mt-auto">
+                            <div class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white
+                                        transition-all duration-300 group-hover:scale-110 group-hover:bg-red-600">
+                                ${arrowIcon}
+                            </div>
+                        </div>
+                    </a>`;
+            });
+
+            cardGrid.innerHTML = cardHTML;
+            // Menambahkan animasi delay untuk setiap kartu
+            cardGrid.querySelectorAll('.card-enter-animation').forEach((card, index) => {
+                card.style.animationDelay = `${index * 100}ms`;
+            });
+
+            boardContainer.appendChild(cardGrid);
+        }
+
+        // Panggil fungsi fetch saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", fetchData);
+    </script>
+</body>
+
+</html>
